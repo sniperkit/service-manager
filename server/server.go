@@ -24,8 +24,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Peripli/service-manager/logger"
 	"github.com/Peripli/service-manager/rest"
-	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 )
 
@@ -46,6 +46,9 @@ type Server struct {
 	Configuration Configuration
 	Router        *mux.Router
 }
+
+// this should be at later stage because environment hasn't been loaded yet
+var log = logger.Get("github.com/Peripli/service-manager/server")
 
 // New creates a new server with the provided REST API configuration and server configuration
 // Returns the new server and an error if creation was not successful
@@ -78,10 +81,10 @@ func registerControllers(router *mux.Router, controllers []rest.Controller) {
 func startServer(server *http.Server, shutdownTimeout time.Duration) {
 	go gracefulShutdown(server, shutdownTimeout)
 
-	logrus.Debugf("Listening on %s", server.Addr)
+	log.Debugf("Listening on %s", server.Addr)
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 }
 
@@ -95,11 +98,11 @@ func gracefulShutdown(server *http.Server, shutdownTimeout time.Duration) {
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
-	logrus.Debugf("Shutdown with timeout: %s", shutdownTimeout)
+	log.Debugf("Shutdown with timeout: %s", shutdownTimeout)
 
 	if err := server.Shutdown(ctx); err != nil {
-		logrus.Errorf("Error: %v", err)
+		log.Errorf("Error: %v", err)
 	} else {
-		logrus.Debug("Server stopped")
+		log.Debug("Server stopped")
 	}
 }
