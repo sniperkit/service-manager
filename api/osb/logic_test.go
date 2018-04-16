@@ -9,8 +9,8 @@ import (
 
 	"fmt"
 
+	"github.com/Peripli/service-manager/rest"
 	"github.com/Peripli/service-manager/storage/storagefakes"
-	"github.com/Peripli/service-manager/types"
 	"github.com/gorilla/mux"
 	"github.com/pmorie/go-open-service-broker-client/v2"
 	"github.com/pmorie/go-open-service-broker-client/v2/fake"
@@ -27,7 +27,7 @@ var _ = Describe("Logic", func() {
 
 		brokerID string
 
-		fakeBroker        *types.Broker
+		fakeBroker        *rest.Broker
 		fakeBrokerStorage *storagefakes.FakeBroker
 		fakeClient        *fake.FakeClient
 
@@ -58,8 +58,8 @@ var _ = Describe("Logic", func() {
 
 	assertAllRelevantInvocationsHappened := func() {
 		It("invokes find from broker storage", func() {
-			Expect(fakeBrokerStorage.FindCallCount()).To(Equal(1))
-			_, id := fakeBrokerStorage.FindArgsForCall(0)
+			Expect(fakeBrokerStorage.GetCallCount()).To(Equal(1))
+			id := fakeBrokerStorage.GetArgsForCall(0)
 			Expect(id).To(Equal(brokerID))
 		})
 
@@ -76,7 +76,7 @@ var _ = Describe("Logic", func() {
 
 	assertBehaviourWhenBrokerIDPathParameterIsMissing := func() {
 		It("does not invoke find from broker storage", func() {
-			Expect(fakeBrokerStorage.FindCallCount()).To(Equal(0))
+			Expect(fakeBrokerStorage.GetCallCount()).To(Equal(0))
 		})
 
 		It("does not invoke the OSB client create function", func() {
@@ -94,8 +94,8 @@ var _ = Describe("Logic", func() {
 
 	assertBehaviourWhenBrokerNotFoundInStorage := func() {
 		It("invokes find from broker storage", func() {
-			Expect(fakeBrokerStorage.FindCallCount()).To(Equal(1))
-			_, id := fakeBrokerStorage.FindArgsForCall(0)
+			Expect(fakeBrokerStorage.GetCallCount()).To(Equal(1))
+			id := fakeBrokerStorage.GetArgsForCall(0)
 			Expect(id).To(Equal(brokerID))
 		})
 
@@ -115,8 +115,8 @@ var _ = Describe("Logic", func() {
 
 	assertBehaviourWhenErrorOccursDuringOsbClientCreation := func() {
 		It("invokes find from broker storage", func() {
-			Expect(fakeBrokerStorage.FindCallCount()).To(Equal(1))
-			_, id := fakeBrokerStorage.FindArgsForCall(0)
+			Expect(fakeBrokerStorage.GetCallCount()).To(Equal(1))
+			id := fakeBrokerStorage.GetArgsForCall(0)
 			Expect(id).To(Equal(brokerID))
 		})
 
@@ -136,8 +136,8 @@ var _ = Describe("Logic", func() {
 
 	assertBehaviourWhenErrorOccursDuringOsbCall := func() {
 		It("invokes find from broker storage", func() {
-			Expect(fakeBrokerStorage.FindCallCount()).To(Equal(1))
-			_, id := fakeBrokerStorage.FindArgsForCall(0)
+			Expect(fakeBrokerStorage.GetCallCount()).To(Equal(1))
+			id := fakeBrokerStorage.GetArgsForCall(0)
 			Expect(id).To(Equal(brokerID))
 		})
 
@@ -158,12 +158,16 @@ var _ = Describe("Logic", func() {
 	}
 
 	BeforeEach(func() {
-		fakeBroker = &types.Broker{
-			ID:       "brokerID",
-			Name:     "brokerName",
-			URL:      "http://localhost:8080/broker",
-			User:     "admin",
-			Password: "admin",
+		fakeBroker = &rest.Broker{
+			ID:        "brokerID",
+			Name:      "brokerName",
+			BrokerURL: "http://localhost:8080/broker",
+			Credentials: &rest.Credentials{
+				Basic: &rest.Basic{
+					Username: "admin",
+					Password: "admin",
+				},
+			},
 		}
 
 		reactionError = &v2.HTTPStatusCodeError{
@@ -228,7 +232,7 @@ var _ = Describe("Logic", func() {
 				Response: expectedResponse,
 				Error:    nil,
 			}
-			fakeBrokerStorage.FindReturns(fakeBroker, nil)
+			fakeBrokerStorage.GetReturns(fakeBroker, nil)
 
 		})
 
@@ -262,7 +266,7 @@ var _ = Describe("Logic", func() {
 			BeforeEach(func() {
 				brokerID = "missingBroker"
 				expectedErr = fmt.Errorf("not found")
-				fakeBrokerStorage.FindReturns(nil, expectedErr)
+				fakeBrokerStorage.GetReturns(nil, expectedErr)
 
 				actualResponse, actualErr = callGetCatalog(brokerID)
 			})
@@ -345,7 +349,7 @@ var _ = Describe("Logic", func() {
 				Response: expectedResponse,
 				Error:    nil,
 			}
-			fakeBrokerStorage.FindReturns(fakeBroker, nil)
+			fakeBrokerStorage.GetReturns(fakeBroker, nil)
 
 		})
 
@@ -378,7 +382,7 @@ var _ = Describe("Logic", func() {
 			BeforeEach(func() {
 				brokerID = "missingBroker"
 				expectedErr = fmt.Errorf("not found")
-				fakeBrokerStorage.FindReturns(nil, expectedErr)
+				fakeBrokerStorage.GetReturns(nil, expectedErr)
 
 				actualResponse, actualErr = callProvision(brokerID)
 			})
@@ -459,7 +463,7 @@ var _ = Describe("Logic", func() {
 				Response: expectedResponse,
 				Error:    nil,
 			}
-			fakeBrokerStorage.FindReturns(fakeBroker, nil)
+			fakeBrokerStorage.GetReturns(fakeBroker, nil)
 
 		})
 
@@ -492,7 +496,7 @@ var _ = Describe("Logic", func() {
 			BeforeEach(func() {
 				brokerID = "missingBroker"
 				expectedErr = fmt.Errorf("not found")
-				fakeBrokerStorage.FindReturns(nil, expectedErr)
+				fakeBrokerStorage.GetReturns(nil, expectedErr)
 
 				actualResponse, actualErr = callDeprovision(brokerID)
 			})
@@ -572,7 +576,7 @@ var _ = Describe("Logic", func() {
 				Response: expectedResponse,
 				Error:    nil,
 			}
-			fakeBrokerStorage.FindReturns(fakeBroker, nil)
+			fakeBrokerStorage.GetReturns(fakeBroker, nil)
 
 		})
 
@@ -605,7 +609,7 @@ var _ = Describe("Logic", func() {
 			BeforeEach(func() {
 				brokerID = "missingBroker"
 				expectedErr = fmt.Errorf("not found")
-				fakeBrokerStorage.FindReturns(nil, expectedErr)
+				fakeBrokerStorage.GetReturns(nil, expectedErr)
 
 				actualResponse, actualErr = callLastOperation(brokerID)
 			})
@@ -689,7 +693,7 @@ var _ = Describe("Logic", func() {
 				Response: expectedResponse,
 				Error:    nil,
 			}
-			fakeBrokerStorage.FindReturns(fakeBroker, nil)
+			fakeBrokerStorage.GetReturns(fakeBroker, nil)
 
 		})
 
@@ -722,7 +726,7 @@ var _ = Describe("Logic", func() {
 			BeforeEach(func() {
 				brokerID = "missingBroker"
 				expectedErr = fmt.Errorf("not found")
-				fakeBrokerStorage.FindReturns(nil, expectedErr)
+				fakeBrokerStorage.GetReturns(nil, expectedErr)
 
 				actualResponse, actualErr = callBind(brokerID)
 			})
@@ -802,7 +806,7 @@ var _ = Describe("Logic", func() {
 				Response: expectedResponse,
 				Error:    nil,
 			}
-			fakeBrokerStorage.FindReturns(fakeBroker, nil)
+			fakeBrokerStorage.GetReturns(fakeBroker, nil)
 
 		})
 
@@ -835,7 +839,7 @@ var _ = Describe("Logic", func() {
 			BeforeEach(func() {
 				brokerID = "missingBroker"
 				expectedErr = fmt.Errorf("not found")
-				fakeBrokerStorage.FindReturns(nil, expectedErr)
+				fakeBrokerStorage.GetReturns(nil, expectedErr)
 
 				actualResponse, actualErr = callUnbind(brokerID)
 			})
@@ -915,7 +919,7 @@ var _ = Describe("Logic", func() {
 				Response: expectedResponse,
 				Error:    nil,
 			}
-			fakeBrokerStorage.FindReturns(fakeBroker, nil)
+			fakeBrokerStorage.GetReturns(fakeBroker, nil)
 
 		})
 
@@ -948,7 +952,7 @@ var _ = Describe("Logic", func() {
 			BeforeEach(func() {
 				brokerID = "missingBroker"
 				expectedErr = fmt.Errorf("not found")
-				fakeBrokerStorage.FindReturns(nil, expectedErr)
+				fakeBrokerStorage.GetReturns(nil, expectedErr)
 
 				actualResponse, actualErr = callProvision(brokerID)
 			})

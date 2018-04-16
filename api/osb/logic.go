@@ -3,15 +3,13 @@ package osb
 import (
 	"net/http"
 
-	//"github.com/pmorie/osb-broker-lib/pkg/broker"
-
 	"fmt"
 
 	"github.com/Peripli/service-manager/storage"
-	"github.com/Peripli/service-manager/types"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Peripli/service-manager/rest"
 	osbc "github.com/pmorie/go-open-service-broker-client/v2"
 	"github.com/pmorie/osb-broker-lib/pkg/broker"
 )
@@ -151,14 +149,14 @@ func (b *BusinessLogic) ValidateBrokerAPIVersion(version string) error {
 	return nil
 }
 
-func clientConfigForBroker(broker *types.Broker) *osbc.ClientConfiguration {
+func clientConfigForBroker(broker *rest.Broker) *osbc.ClientConfiguration {
 	config := osbc.DefaultClientConfiguration()
 	config.Name = broker.Name
-	config.URL = broker.URL
+	config.URL = broker.BrokerURL
 	config.AuthConfig = &osbc.AuthConfig{
 		BasicAuthConfig: &osbc.BasicAuthConfig{
-			Username: broker.User,
-			Password: broker.Password,
+			Username: broker.Credentials.Basic.Username,
+			Password: broker.Credentials.Basic.Password,
 		},
 	}
 	return config
@@ -171,7 +169,7 @@ func (b *BusinessLogic) osbClient(request *http.Request) (osbc.Client, error) {
 	if !ok {
 		return nil, fmt.Errorf("Error creating OSB client: brokerID path parameter not found")
 	}
-	broker, err := b.brokerStorage.Find(request.Context(), brokerID)
+	broker, err := b.brokerStorage.Get(brokerID)
 	if err != nil {
 		return nil, fmt.Errorf("Error obtaining broker with id %s from storage: %s", brokerID, err)
 	}

@@ -55,4 +55,3 @@ func handleInterrupts(ctx context.Context, cancelFunc context.CancelFunc) {
 		}
 	}()
 }
-

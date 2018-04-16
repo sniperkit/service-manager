@@ -17,35 +17,43 @@
 package rest
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/sirupsen/logrus"
 )
 
-// ErrorResponse struct used to store information about error
-type ErrorResponse struct {
-	Error       string `json:"error,omitempty"`
-	Description string `json:"description"`
-}
-
 // HandleError sends a JSON containing the error to the response writer
 func HandleError(err error, writer http.ResponseWriter) {
 	if err != nil {
-		sendErr := SendJSON(writer, http.StatusInternalServerError, ErrorResponse{
-			Description: err.Error(),
-		})
+		var respError *ErrorResponse
+		switch t := err.(type) {
+		case *ErrorResponse:
+			logrus.Debug(err)
+			respError = t
+		case ErrorResponse:
+			logrus.Debug(err)
+			respError = &t
+		default:
+			logrus.Error(err)
+			respError = &ErrorResponse{
+				ErrorType:   "InternalError",
+				Description: "Internal server error",
+				StatusCode:  http.StatusInternalServerError,
+			}
+		}
+
+		sendErr := SendJSON(writer, respError.StatusCode, respError)
 		if sendErr != nil {
 			logrus.Errorf("Could not write error to response: %v", sendErr)
 		}
 	}
+
 }
 
-// SendJSON writes a JSON value and sets the specified HTTP Status code
-func SendJSON(writer http.ResponseWriter, code int, value interface{}) error {
-	writer.Header().Add("Content-Type", "application/json")
-	writer.WriteHeader(code)
-
-	encoder := json.NewEncoder(writer)
-	return encoder.Encode(value)
+// CreateErrorResponse create ErrorResponse object
+func CreateErrorResponse(err error, statusCode int, errorType string) *ErrorResponse {
+	return &ErrorResponse{
+		ErrorType:   errorType,
+		Description: err.Error(),
+		StatusCode:  statusCode}
 }

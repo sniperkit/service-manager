@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package rest_test
+package rest
 
 import (
 	"errors"
@@ -24,8 +24,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
-
-	"github.com/Peripli/service-manager/rest"
 )
 
 func TestRest(t *testing.T) {
@@ -83,7 +81,6 @@ func (errorResponseWriter) WriteHeader(statusCode int) {
 var _ = Describe("Errors", func() {
 
 	mockedWriter := &mockedResponseWriter{}
-	testError := errors.New("test description")
 
 	BeforeEach(func() {
 		mockedWriter.data = []byte{}
@@ -92,39 +89,12 @@ var _ = Describe("Errors", func() {
 	Describe("Send JSON", func() {
 		Context("With valid parameters", func() {
 			It("Writes to response writer", func() {
-				response := rest.ErrorResponse{Error: "test error", Description: "test description"}
-				if err := rest.SendJSON(mockedWriter, http.StatusOK, response); err != nil {
+				response := ErrorResponse{ErrorType: "test error", Description: "test description"}
+				if err := SendJSON(mockedWriter, http.StatusOK, response); err != nil {
 					Fail("Serializing valid ErrorResponse should be successful")
 				}
-				Expect(string(mockedWriter.data)).To(ContainSubstring(testError.Error()))
+				Expect(string(mockedWriter.data)).To(ContainSubstring("test description"))
 			})
 		})
 	})
-
-	Describe("Handle Error", func() {
-		Context("With nil error", func() {
-			It("Should have no data in Response Writer", func() {
-				rest.HandleError(nil, mockedWriter)
-				Expect(string(mockedWriter.data)).To(BeEmpty())
-			})
-		})
-
-		Context("With an error", func() {
-			It("Should write to Response Writer", func() {
-				rest.HandleError(testError, mockedWriter)
-				Expect(string(mockedWriter.data)).To(ContainSubstring(testError.Error()))
-				Expect(mockedWriter.status).To(Equal(http.StatusInternalServerError))
-			})
-		})
-
-		Context("With SendJSON returning an error", func() {
-			It("Should not write to Response Writer and log", func() {
-				hook := &loggingInterceptorHook{}
-				logrus.AddHook(hook)
-				rest.HandleError(testError, &errorResponseWriter{})
-				Expect(hook.data).To(ContainSubstring("Could not write error to response"))
-			})
-		})
-	})
-
 })
