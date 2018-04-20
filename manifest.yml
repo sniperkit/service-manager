@@ -1,0 +1,6 @@
+---
+applications:
+  - name: sm
+    env:
+      GOVERSION: go1.10
+      GOPACKAGENAME: github.com/Peripli/service-manager
