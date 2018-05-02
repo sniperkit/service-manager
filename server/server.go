@@ -20,6 +20,7 @@ package server
 import (
 	"context"
 	"net/http"
+	"regexp"
 	"time"
 
 	"fmt"
@@ -39,7 +40,10 @@ type Server struct {
 // Returns the new server and an error if creation was not successful
 func New(api rest.API, config *Config) (*Server, error) {
 	router := mux.NewRouter().StrictSlash(true)
-	if err := registerControllers(router, api.Controllers()); err != nil {
+	filters := make(map[string]rest.Filters)
+	filters[".*"] = rest.Filters{rest.AuthFilter{}, rest.OrgFilter{}}
+
+	if err := registerControllers(router, api.Controllers(), filters); err != nil {
 		return nil, fmt.Errorf("new Config: %s", err)
 	}
 
@@ -73,7 +77,6 @@ func registerRoutes(prefix string, fromRouter *mux.Router, toRouter *mux.Router)
 		methods, err := route.GetMethods()
 		if err != nil {
 			return fmt.Errorf("register routes: %s", err)
-
 		}
 		if len(methods) > 0 {
 			r.Methods(methods...)
@@ -84,17 +87,28 @@ func registerRoutes(prefix string, fromRouter *mux.Router, toRouter *mux.Router)
 	})
 }
 
-func registerControllers(router *mux.Router, controllers []rest.Controller) error {
+func registerControllers(router *mux.Router, controllers []rest.Controller, filters map[string]rest.Filters) error {
 	for _, ctrl := range controllers {
 		for _, route := range ctrl.Routes() {
 			fromRouter, ok := route.Handler.(*mux.Router)
 			if ok {
 				if err := registerRoutes(route.Endpoint.Path, fromRouter, router); err != nil {
-
 					return fmt.Errorf("register controllers: %s", err)
 				}
 			} else {
-				r := router.Handle(route.Endpoint.Path, route.Handler)
+				var r *mux.Route
+				matchedFilters, err := getAllMatchingFilters(route.Endpoint.Path, filters)
+				if err != nil {
+					return fmt.Errorf("problem occured while matching filters: %s", err)
+				}
+				if len(matchedFilters) > 0 {
+					fmt.Printf("filters: %v\n", len(matchedFilters))
+					filteredHandler := matchedFilters.Wrap(route.Handler)
+					r = router.Handle(route.Endpoint.Path, filteredHandler)
+				} else {
+					r = router.Handle(route.Endpoint.Path, route.Handler)
+				}
+
 				if route.Endpoint.Method != rest.AllMethods {
 					r.Methods(route.Endpoint.Method)
 				}
@@ -102,6 +116,25 @@ func registerControllers(router *mux.Router, controllers []rest.Controller) erro
 		}
 	}
 	return nil
+}
+
+func getAllMatchingFilters(path string, filters map[string]rest.Filters) (rest.Filters, error) {
+	result := make(rest.Filters, 0)
+	for filterPath, filtersPerRoute := range filters {
+		match, err := regexp.MatchString(filterPath, path)
+		if err != nil {
+			return nil, err
+		}
+		if match {
+			logrus.Infof("matching filter pattern %s to endpoint %s", filterPath, path)
+			for _, filter := range filtersPerRoute {
+				result = append(result, filter)
+			}
+		} else {
+			logrus.Infof("No match for pattern %s to endpoint %s", filterPath, path)
+		}
+	}
+	return result, nil
 }
 
 func startServer(ctx context.Context, server *http.Server, shutdownTimeout time.Duration) {

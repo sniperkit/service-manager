@@ -17,7 +17,13 @@
 // Package rest contains logic for building the Service Manager REST API
 package rest
 
-import "net/http"
+import (
+	"errors"
+	"fmt"
+	"net/http"
+
+	"github.com/Peripli/service-manager/types"
+)
 
 // AllMethods matches all REST HTTP Methods
 const AllMethods = "*"
@@ -49,6 +55,84 @@ type Route struct {
 // Endpoint is a combination of a Path and an HTTP Method
 type Endpoint struct {
 	Path, Method string
+}
+
+type Filter interface {
+	Handler() APIHandler
+	Type() string
+}
+
+type AuthFilter struct{}
+
+func (f AuthFilter) Handler() APIHandler {
+	return func(rw http.ResponseWriter, req *http.Request) error {
+		fmt.Println("auth filter!")
+		return types.NewErrorResponse(errors.New("asdf"), 401, "Unauthorized")
+	}
+}
+
+func (f AuthFilter) Type() string {
+	return "inbound"
+}
+
+type OrgFilter struct{}
+
+func (f OrgFilter) Handler() APIHandler {
+	return func(rw http.ResponseWriter, req *http.Request) error {
+		fmt.Println("org filter!")
+		return nil
+	}
+}
+
+func (f OrgFilter) Type() string {
+	return "outbound"
+}
+
+type Filters []Filter
+
+func (filters Filters) Wrap(handler http.Handler) http.Handler {
+	inboundFilters, outboundFilters := filters.separate()
+	fmt.Printf("Filters separated! Inbound: %v, Outbound: %v\n", len(inboundFilters), len(outboundFilters))
+	return APIHandler(func(rw http.ResponseWriter, req *http.Request) error {
+		if err := filters.process(inboundFilters, rw, req); err != nil {
+			return err
+		}
+
+		apiHandler, ok := handler.(APIHandler)
+		if ok {
+			if err := apiHandler(rw, req); err != nil {
+				return err
+			}
+		} else {
+			handler.ServeHTTP(rw, req)
+		}
+
+		return filters.process(outboundFilters, rw, req)
+	})
+}
+
+func (filters Filters) separate() (Filters, Filters) {
+	var inbound = make(Filters, 0)
+	var outbound = make(Filters, 0)
+	for _, filter := range filters {
+		if filter.Type() == "inbound" {
+			inbound = append(inbound, filter)
+		} else {
+			outbound = append(outbound, filter)
+		}
+	}
+
+	return inbound, outbound
+}
+
+func (f Filters) process(filters Filters, rw http.ResponseWriter, req *http.Request) error {
+	for _, filter := range filters {
+		h := filter.Handler()
+		if err := h(rw, req); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // APIHandler enriches http.HandlerFunc with an error response for further processing
