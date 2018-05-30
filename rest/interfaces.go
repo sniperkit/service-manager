@@ -57,9 +57,43 @@ type Endpoint struct {
 	Path, Method string
 }
 
-type Filter interface {
-	Handler() APIHandler
-	Type() string
+type OSBPlugin interface {
+	Provisioner
+	DeProvisioner
+}
+
+type Provisioner interface {
+	Provision(http.ResponseWriter, *http.Request) error
+}
+
+type DeProvisioner interface {
+	DeProvision(http.ResponseWriter, *http.Request) error
+}
+
+type OSBFilter struct {
+	PluginHandler APIHandler
+	Typee         string
+}
+
+func (f OSBFilter) Handler() APIHandler {
+	return f.pluginHandler
+}
+
+func (f OSBFilter) Type() string {
+	return f.Typee
+}
+
+func RegisterPlugin(plugin interface{}) {
+	switch p := plugin.(type) {
+	case Provisioner:
+		// api.RegisterFilter()
+		filter := OSBFilter{p.OnProvision, "inbound"}
+		filters.Path("/v1/osb").Filter(filter)
+	case DeProvisioner:
+		filter := OSBFilter{p.OnDeprovision, "inbound"}
+		filters.Path("/v1/osb").Filter(filter)
+
+	}
 }
 
 type AuthFilter struct{}

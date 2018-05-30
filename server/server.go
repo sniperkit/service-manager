@@ -41,6 +41,9 @@ type Server struct {
 func New(api rest.API, config *Config) (*Server, error) {
 	router := mux.NewRouter().StrictSlash(true)
 	filters := make(map[string]rest.Filters)
+
+
+	filters["/v1/osb"] = rest.Filters
 	filters[".*"] = rest.Filters{rest.AuthFilter{}, rest.OrgFilter{}}
 
 	if err := registerControllers(router, api.Controllers(), filters); err != nil {
