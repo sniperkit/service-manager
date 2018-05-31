@@ -17,7 +17,11 @@
 // Package rest contains logic for building the Service Manager REST API
 package rest
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/Peripli/service-manager/pkg/plugin"
+)
 
 // AllMethods matches all REST HTTP Methods
 const AllMethods = "*"
@@ -43,7 +47,7 @@ type Route struct {
 	Endpoint Endpoint
 
 	// Handler is the function that should handle incoming requests for this endpoint
-	Handler http.Handler
+	Handler plugin.Handler
 }
 
 // Endpoint is a combination of a Path and an HTTP Method
