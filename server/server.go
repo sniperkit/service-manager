@@ -70,30 +70,6 @@ func (server *Server) Run(ctx context.Context) {
 	startServer(ctx, handler, server.Configuration.ShutdownTimeout)
 }
 
-func registerRoutes(prefix string, fromRouter *mux.Router, toRouter *mux.Router) error {
-	subRouter := toRouter.PathPrefix(prefix).Subrouter()
-	return fromRouter.Walk(func(route *mux.Route, _ *mux.Router, _ []*mux.Route) error {
-
-		path, err := route.GetPathTemplate()
-		if err != nil {
-			return fmt.Errorf("register routes: %s", err)
-		}
-		r := subRouter.Handle(path, route.GetHandler())
-
-		methods, err := route.GetMethods()
-		if err != nil {
-			return fmt.Errorf("register routes: %s", err)
-
-		}
-		if len(methods) > 0 {
-			r.Methods(methods...)
-		}
-
-		logrus.Info("Registering route with methods: ", methods, " and path: ", path, " behind prefix ", prefix)
-		return nil
-	})
-}
-
 func registerControllers(router *mux.Router, controllers []rest.Controller, filters []plugin.Filter) error {
 	for _, ctrl := range controllers {
 		for _, route := range ctrl.Routes() {
