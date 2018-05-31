@@ -52,7 +52,7 @@ type Route struct {
 
 // Endpoint is a combination of a Path and an HTTP Method
 type Endpoint struct {
-	Path, Method string
+	Method, Path string
 }
 
 // APIHandler enriches http.HandlerFunc with an error response for further processing
