@@ -3,7 +3,6 @@ package plugin
 import (
 	"encoding/json"
 	"net/http"
-	"regexp"
 )
 
 type JSON = interface{}
@@ -51,8 +50,9 @@ type RequestMatcher struct {
 	Methods []string
 
 	// PathPattern matches endpoint path (as registered in mux)
-	// if nil, matches any path
-	PathPattern *regexp.Regexp
+	// This is a file path pattern, see path.Match
+	// If empty, matches any path
+	PathPattern string
 }
 
 type Filter struct {

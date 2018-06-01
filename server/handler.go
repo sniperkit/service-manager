@@ -2,7 +2,7 @@ package server
 
 import (
 	"net/http"
-	"regexp"
+	"path"
 
 	"github.com/sirupsen/logrus"
 
@@ -91,8 +91,15 @@ func matchFilters(endpoint *rest.Endpoint, filters []plugin.Filter) []plugin.Fil
 	return matches
 }
 
-func matchPath(path string, pattern *regexp.Regexp) bool {
-	return pattern == nil || pattern.MatchString(path)
+func matchPath(endpointPath string, pattern string) bool {
+	if pattern == "" {
+		return true
+	}
+	match, err := path.Match(pattern, endpointPath)
+	if err != nil {
+		logrus.Fatalf("Invalid endpoint path pattern %s: %v", endpointPath, err)
+	}
+	return match
 }
 
 func matchMethod(method string, methods []string) bool {

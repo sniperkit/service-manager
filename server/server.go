@@ -20,7 +20,6 @@ package server
 import (
 	"context"
 	"net/http"
-	"regexp"
 	"time"
 
 	"github.com/Peripli/service-manager/pkg/plugin"
@@ -58,7 +57,7 @@ func (server *Server) RegisterPlugin(plug interface{}) {
 		server.RegisterFilter(plugin.Filter{
 			plugin.RequestMatcher{
 				[]string{"GET"},
-				regexp.MustCompile(`^/v1/osb/[^/]+/v2/catalog$`),
+				"/v1/osb/*/v2/catalog",
 			},
 			p.FetchCatalog,
 		})
@@ -67,7 +66,7 @@ func (server *Server) RegisterPlugin(plug interface{}) {
 		server.RegisterFilter(plugin.Filter{
 			plugin.RequestMatcher{
 				[]string{"PUT"},
-				regexp.MustCompile(`^/v1/osb/[^/]+/v2/service_instances/[^/]+$`),
+				"/v1/osb/*/v2/service_instances/*",
 			},
 			p.Provision,
 		})
@@ -76,7 +75,7 @@ func (server *Server) RegisterPlugin(plug interface{}) {
 		server.RegisterFilter(plugin.Filter{
 			plugin.RequestMatcher{
 				[]string{"DELETE"},
-				regexp.MustCompile(`^/v1/osb/[^/]+/v2/service_instances/[^/]+$`),
+				"/v1/osb/*/v2/service_instances/*",
 			},
 			p.Deprovision,
 		})
@@ -85,7 +84,7 @@ func (server *Server) RegisterPlugin(plug interface{}) {
 		server.RegisterFilter(plugin.Filter{
 			plugin.RequestMatcher{
 				[]string{"PUT"},
-				regexp.MustCompile(`^/v1/osb/[^/]+/v2/service_instances/[^/]+/service_bindings/[^/]+$`),
+				"/v1/osb/*/v2/service_instances/*/service_bindings/*",
 			},
 			p.Bind,
 		})
@@ -94,7 +93,7 @@ func (server *Server) RegisterPlugin(plug interface{}) {
 		server.RegisterFilter(plugin.Filter{
 			plugin.RequestMatcher{
 				[]string{"DELETE"},
-				regexp.MustCompile(`^/v1/osb/[^/]+/v2/service_instances/[^/]+/service_bindings/[^/]+$`),
+				"/v1/osb/*/v2/service_instances/*/service_bindings/*",
 			},
 			p.Unbind,
 		})
