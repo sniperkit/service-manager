@@ -54,14 +54,27 @@ func (ps *platformStorage) Create(platform *types.Platform) error {
 }
 
 func (ps *platformStorage) Get(id string) (*types.Platform, error) {
-	platform := Platform{}
-	err := ps.db.Get(&platform,
-		"SELECT id, type, name, description, created_at, updated_at FROM "+platformTable+" WHERE id=$1",
-		id)
-	if err = checkSQLNoRows(err); err != nil {
-		return nil, err
+	platform := struct {
+		*Platform
+		Username string `db:"username"`
+		Password string `db:"password"`
+	}{
+		&Platform{}, "", "",
 	}
-	return platform.Convert(), nil
+
+	query := fmt.Sprintf(`SELECT p.id, p.name, p.description, p.created_at, p.updated_at, c.username, c.password
+						 FROM %s AS p INNER JOIN %s AS c ON (p.credentials_id=c.id)
+						 WHERE p.id=$1`, platformTable, credentialsTable)
+
+	err := ps.db.Get(&platform, query, id)
+	if err != nil {
+		return nil, checkSQLNoRows(err)
+	}
+
+	result := platform.Convert()
+	result.Credentials = types.NewBasicCredentials(platform.Username, platform.Password)
+
+	return result, nil
 }
 
 func (ps *platformStorage) GetAll() ([]types.Platform, error) {

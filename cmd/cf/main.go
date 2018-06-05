@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/signal"
 
-	cfenv "github.com/Peripli/service-manager/cmd/cf/env"
 	"github.com/Peripli/service-manager/env"
 	"github.com/Peripli/service-manager/sm"
 	"github.com/sirupsen/logrus"
@@ -32,7 +31,7 @@ func main() {
 	defer cancel()
 	handleInterrupts(ctx, cancel)
 
-	srv, err := sm.NewServer(ctx, cfenv.New(env.Default()))
+	srv, err := sm.NewServer(ctx, env.Default())
 	if err != nil {
 		logrus.Fatal("Error creating the server: ", err)
 	}

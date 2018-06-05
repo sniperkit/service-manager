@@ -58,7 +58,7 @@ func (bs *brokerStorage) Create(broker *types.Broker) error {
 }
 
 func (bs *brokerStorage) Get(id string) (*types.Broker, error) {
-	broker := &struct {
+	broker := struct {
 		*Broker
 		Username string `db:"username"`
 		Password string `db:"password"`
@@ -70,7 +70,7 @@ func (bs *brokerStorage) Get(id string) (*types.Broker, error) {
 						 FROM %s AS b INNER JOIN %s AS c ON (b.credentials_id=c.id)
 						 WHERE b.id=$1`, brokerTable, credentialsTable)
 
-	err := bs.db.Get(broker, query, id)
+	err := bs.db.Get(&broker, query, id)
 
 	if err != nil {
 		return nil, checkSQLNoRows(err)

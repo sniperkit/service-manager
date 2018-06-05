@@ -20,6 +20,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // GenerateCredentials return user and password
@@ -31,15 +33,19 @@ func GenerateCredentials() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
+
 	_, err = rand.Read(password)
 	if err != nil {
 		return "", "", err
 	}
+	password, err = bcrypt.GenerateFromPassword(password, 14)
+	if err != nil {
+		return "", "", err
+	}
 
-	encodedPass := base64.StdEncoding.EncodeToString(password)
 	encodedUser := base64.StdEncoding.EncodeToString(user)
 
-	return encodedUser, encodedPass, nil
+	return encodedUser, string(password), nil
 }
 
 // ToRFCFormat return the time.Time object as string in RFC3339 format
