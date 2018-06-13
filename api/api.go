@@ -25,13 +25,12 @@ import (
 	"github.com/Peripli/service-manager/rest"
 	"github.com/Peripli/service-manager/server"
 	"github.com/Peripli/service-manager/storage"
-	"github.com/sirupsen/logrus"
 )
 
 // Default returns the minimum set of REST APIs needed for the Service Manager
-func Default(storage storage.Storage, env server.Environment) rest.API {
-	return &smAPI{
-		controllers: []rest.Controller{
+func Default(storage storage.Storage, env server.Environment) *rest.API {
+	return &rest.API{
+		Controllers: []rest.Controller{
 			&broker.Controller{
 				BrokerStorage: storage.Broker(),
 			},
@@ -43,22 +42,5 @@ func Default(storage storage.Storage, env server.Environment) rest.API {
 			},
 			info.NewController(env),
 		},
-	}
-}
-
-type smAPI struct {
-	controllers []rest.Controller
-}
-
-func (api *smAPI) Controllers() []rest.Controller {
-	return api.controllers
-}
-
-func (api *smAPI) RegisterControllers(controllers ...rest.Controller) {
-	for _, controller := range controllers {
-		if controller == nil {
-			logrus.Panicln("Cannot add nil controllers")
-		}
-		api.controllers = append(api.controllers, controller)
 	}
 }

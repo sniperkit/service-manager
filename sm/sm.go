@@ -47,11 +47,7 @@ func NewServer(ctx context.Context, serverEnv server.Environment) (*server.Serve
 	}
 
 	defaultAPI := api.Default(storage, serverEnv)
-	srv, err := server.New(defaultAPI, config)
-	if err != nil {
-		return nil, fmt.Errorf("Error creating server: %v", err)
-	}
-	return srv, nil
+	return server.New(defaultAPI, config), nil
 }
 
 func setUpLogging(logLevel string, logFormat string) {
