@@ -17,15 +17,16 @@
 package info
 
 import (
-	"github.com/Peripli/service-manager/rest"
 	"net/http"
+
+	"github.com/Peripli/service-manager/rest"
 )
 
 const (
 	apiVersion = "v1"
 	root       = "info"
 	// URL is the path of the info endpoint
-	URL        = "/" + apiVersion + "/" + root
+	URL = "/" + apiVersion + "/" + root
 )
 
 func (c *controller) Routes() []rest.Route {
@@ -35,7 +36,7 @@ func (c *controller) Routes() []rest.Route {
 				Method: http.MethodGet,
 				Path:   URL,
 			},
-			Handler: rest.APIHandler(c.getInfo),
+			Handler: c.getInfo,
 		},
 	}
 }

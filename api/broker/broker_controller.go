@@ -21,12 +21,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Peripli/service-manager/pkg/filter"
+
 	"github.com/Peripli/service-manager/api/common"
 
 	"github.com/Peripli/service-manager/rest"
 	"github.com/Peripli/service-manager/storage"
 	"github.com/Peripli/service-manager/types"
-	"github.com/gorilla/mux"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -61,22 +62,22 @@ func validateBroker(broker *types.Broker) error {
 	return validateBrokerCredentials(broker.Credentials)
 }
 
-func (ctrl *Controller) addBroker(response http.ResponseWriter, request *http.Request) error {
+func (ctrl *Controller) addBroker(request *filter.Request) (*filter.Response, error) {
 	logrus.Debug("Creating new broker")
 
 	broker := &types.Broker{}
 	if err := rest.ReadJSONBody(request, broker); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := validateBroker(broker); err != nil {
-		return types.NewErrorResponse(err, http.StatusBadRequest, "BadRequest")
+		return nil, types.NewErrorResponse(err, http.StatusBadRequest, "BadRequest")
 	}
 
 	uuid, err := uuid.NewV4()
 	if err != nil {
 		logrus.Error("Could not generate GUID")
-		return err
+		return nil, err
 	}
 
 	broker.ID = uuid.String()
@@ -88,65 +89,62 @@ func (ctrl *Controller) addBroker(response http.ResponseWriter, request *http.Re
 	err = ctrl.BrokerStorage.Create(broker)
 	err = common.HandleUniqueError(err, "broker")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	broker.Credentials = nil
-	return rest.SendJSON(response, http.StatusCreated, broker)
+
+	return rest.NewJSONResponse(http.StatusCreated, broker)
 }
 
-func getBrokerID(request *http.Request) string {
-	return mux.Vars(request)[reqBrokerID]
-}
-
-func (ctrl *Controller) getBroker(response http.ResponseWriter, request *http.Request) error {
-	brokerID := getBrokerID(request)
+func (ctrl *Controller) getBroker(request *filter.Request) (*filter.Response, error) {
+	brokerID := request.PathParams[reqBrokerID]
 	logrus.Debugf("Getting broker with id %s", brokerID)
 
 	broker, err := ctrl.BrokerStorage.Get(brokerID)
 	err = common.HandleNotFoundError(err, "broker", brokerID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	broker.Credentials = nil
 
-	return rest.SendJSON(response, http.StatusOK, broker)
+	return rest.NewJSONResponse(http.StatusOK, broker)
 }
 
-func (ctrl *Controller) getAllBrokers(response http.ResponseWriter, request *http.Request) error {
+func (ctrl *Controller) getAllBrokers(request *filter.Request) (*filter.Response, error) {
 	logrus.Debug("Getting all brokers")
 
 	brokers, err := ctrl.BrokerStorage.GetAll()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	type brokerResponse struct {
 		Brokers []types.Broker `json:"brokers"`
 	}
-	return rest.SendJSON(response, http.StatusOK, brokerResponse{brokers})
+	return rest.NewJSONResponse(http.StatusOK, brokerResponse{brokers})
 }
 
-func (ctrl *Controller) deleteBroker(response http.ResponseWriter, request *http.Request) error {
-	brokerID := getBrokerID(request)
+func (ctrl *Controller) deleteBroker(request *filter.Request) (*filter.Response, error) {
+	brokerID := request.PathParams[reqBrokerID]
 	logrus.Debugf("Deleting broker with id %s", brokerID)
 
 	err := ctrl.BrokerStorage.Delete(brokerID)
 	err = common.HandleNotFoundError(err, "broker", brokerID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return rest.SendJSON(response, http.StatusOK, map[string]int{})
+	return rest.NewJSONResponse(http.StatusOK, map[string]int{})
 }
 
-func (ctrl *Controller) updateBroker(response http.ResponseWriter, request *http.Request) error {
-	brokerID := getBrokerID(request)
+func (ctrl *Controller) updateBroker(request *filter.Request) (*filter.Response, error) {
+	brokerID := request.PathParams[reqBrokerID]
 	logrus.Debugf("Updating broker with id %s", brokerID)
 
 	broker := &types.Broker{}
 	if err := rest.ReadJSONBody(request, broker); err != nil {
 		logrus.Error("Invalid request body")
-		return err
+		return nil, err
 	}
 
 	broker.ID = brokerID
@@ -156,7 +154,7 @@ func (ctrl *Controller) updateBroker(response http.ResponseWriter, request *http
 	if broker.Credentials != nil {
 		err := validateBrokerCredentials(broker.Credentials)
 		if err != nil {
-			return types.NewErrorResponse(err, http.StatusBadRequest, "BadRequest")
+			return nil, types.NewErrorResponse(err, http.StatusBadRequest, "BadRequest")
 		}
 	}
 	err := brokerStorage.Update(broker)
@@ -165,14 +163,14 @@ func (ctrl *Controller) updateBroker(response http.ResponseWriter, request *http
 		common.HandleUniqueError(err, "broker"),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	updatedBroker, err := brokerStorage.Get(broker.ID)
 	if err != nil {
 		logrus.Error("Failed to retrieve updated broker")
-		return err
+		return nil, err
 	}
 
-	return rest.SendJSON(response, http.StatusOK, updatedBroker)
+	return rest.NewJSONResponse(http.StatusOK, updatedBroker)
 }

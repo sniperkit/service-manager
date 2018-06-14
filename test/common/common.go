@@ -38,7 +38,11 @@ func GetServerRouter() *mux.Router {
 		Name:   "application",
 		Format: "yml",
 	}, "SM")
-	srv, err := sm.NewServer(context.Background(), serverEnv)
+	params := &sm.Parameters{
+		Environment: serverEnv,
+		Context:     context.Background(),
+	}
+	srv, err := sm.NewServer(params)
 	if err != nil {
 		logrus.Fatal("Error creating server: ", err)
 	}

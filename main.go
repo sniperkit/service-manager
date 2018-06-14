@@ -3,12 +3,18 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+
+	"github.com/tidwall/sjson"
+
+	"github.com/Peripli/service-manager/pkg/filter"
 
 	"os"
 	"os/signal"
 
 	cfenv "github.com/Peripli/service-manager/cf/env"
 	"github.com/Peripli/service-manager/env"
+	"github.com/Peripli/service-manager/rest"
 	"github.com/Peripli/service-manager/server"
 	"github.com/Peripli/service-manager/sm"
 	"github.com/sirupsen/logrus"
@@ -21,10 +27,32 @@ func main() {
 	defer cancel()
 	handleInterrupts(ctx, cancel)
 
-	srv, err := sm.NewServer(ctx, getEnvironment(flags))
+	api := rest.API{}
+	api.RegisterFilters(filter.Filter{
+		RequestMatcher: filter.RequestMatcher{
+			Methods:     []string{"GET"},
+			PathPattern: "/v1/service_brokers",
+		},
+		Middleware: func(request *filter.Request, next filter.Handler) (*filter.Response, error) {
+			res, err := next(request)
+			if err == nil {
+				res.Body, err = sjson.SetBytes(res.Body, "extra", "value")
+			}
+			fmt.Println(">>>>>", string(res.Body))
+			return res, err
+		},
+	})
+
+	config := &sm.Parameters{
+		Context:     ctx,
+		Environment: getEnvironment(flags),
+		API:         &api,
+	}
+	srv, err := sm.NewServer(config)
 	if err != nil {
 		logrus.Fatal("Error creating the server: ", err)
 	}
+
 	srv.Run(ctx)
 }
 

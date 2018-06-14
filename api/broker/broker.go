@@ -36,35 +36,35 @@ func (brokerCtrl *Controller) Routes() []rest.Route {
 				Method: http.MethodPost,
 				Path:   url,
 			},
-			Handler: rest.APIHandler(brokerCtrl.addBroker),
+			Handler: brokerCtrl.addBroker,
 		},
 		{
 			Endpoint: rest.Endpoint{
 				Method: http.MethodGet,
 				Path:   url + "/{broker_id}",
 			},
-			Handler: rest.APIHandler(brokerCtrl.getBroker),
+			Handler: brokerCtrl.getBroker,
 		},
 		{
 			Endpoint: rest.Endpoint{
 				Method: http.MethodGet,
 				Path:   url,
 			},
-			Handler: rest.APIHandler(brokerCtrl.getAllBrokers),
+			Handler: brokerCtrl.getAllBrokers,
 		},
 		{
 			Endpoint: rest.Endpoint{
 				Method: http.MethodDelete,
 				Path:   url + "/{broker_id}",
 			},
-			Handler: rest.APIHandler(brokerCtrl.deleteBroker),
+			Handler: brokerCtrl.deleteBroker,
 		},
 		{
 			Endpoint: rest.Endpoint{
 				Method: http.MethodPatch,
 				Path:   url + "/{broker_id}",
 			},
-			Handler: rest.APIHandler(brokerCtrl.updateBroker),
+			Handler: brokerCtrl.updateBroker,
 		},
 	}
 }

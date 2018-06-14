@@ -22,15 +22,24 @@ import (
 	"fmt"
 
 	"github.com/Peripli/service-manager/api"
+	"github.com/Peripli/service-manager/rest"
 	"github.com/Peripli/service-manager/server"
 	"github.com/Peripli/service-manager/storage"
 	"github.com/Peripli/service-manager/storage/postgres"
 	"github.com/sirupsen/logrus"
 )
 
+type Parameters struct {
+	Context     context.Context
+	Environment server.Environment
+
+	// API can define REST API extensions
+	API *rest.API
+}
+
 // NewServer creates service manager server
-func NewServer(ctx context.Context, serverEnv server.Environment) (*server.Server, error) {
-	config, err := server.NewConfiguration(serverEnv)
+func NewServer(params *Parameters) (*server.Server, error) {
+	config, err := server.NewConfiguration(params.Environment)
 	if err != nil {
 		return nil, fmt.Errorf("Error loading configuration: %v", err)
 	}
@@ -41,13 +50,17 @@ func NewServer(ctx context.Context, serverEnv server.Environment) (*server.Serve
 
 	setUpLogging(config.LogLevel, config.LogFormat)
 
-	storage, err := storage.Use(ctx, postgres.Storage, config.DbURI)
+	storage, err := storage.Use(params.Context, postgres.Storage, config.DbURI)
 	if err != nil {
 		return nil, fmt.Errorf("Error using storage: %v", err)
 	}
 
-	defaultAPI := api.Default(storage, serverEnv)
-	return server.New(defaultAPI, config), nil
+	coreAPI := api.Default(storage, params.Environment)
+	if params.API != nil {
+		coreAPI.RegisterControllers(params.API.Controllers...)
+		coreAPI.RegisterFilters(params.API.Filters...)
+	}
+	return server.New(coreAPI, config), nil
 }
 
 func setUpLogging(logLevel string, logFormat string) {
