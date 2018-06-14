@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 
 	"github.com/tidwall/sjson"
 
@@ -31,14 +30,13 @@ func main() {
 	api.RegisterFilters(filter.Filter{
 		RequestMatcher: filter.RequestMatcher{
 			Methods:     []string{"GET"},
-			PathPattern: "/v1/service_brokers",
+			PathPattern: "/v1/*",
 		},
 		Middleware: func(request *filter.Request, next filter.Handler) (*filter.Response, error) {
 			res, err := next(request)
 			if err == nil {
 				res.Body, err = sjson.SetBytes(res.Body, "extra", "value")
 			}
-			fmt.Println(">>>>>", string(res.Body))
 			return res, err
 		},
 	})
