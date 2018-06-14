@@ -80,7 +80,7 @@ func (ctrl *Controller) addPlatform(rw http.ResponseWriter, req *http.Request) e
 	platform.CreatedAt = currentTime
 	platform.UpdatedAt = currentTime
 
-	username, password, err := util.GenerateCredentials()
+	username, plainPassword, password, err := util.GenerateCredentials()
 	if err != nil {
 		logrus.Error("Could not generate credentials for platform")
 		return err
@@ -90,6 +90,7 @@ func (ctrl *Controller) addPlatform(rw http.ResponseWriter, req *http.Request) e
 	if err != nil {
 		return err
 	}
+	platform.Credentials.Basic.Password = plainPassword
 
 	return rest.SendJSON(rw, http.StatusCreated, platform)
 }

@@ -25,27 +25,29 @@ import (
 )
 
 // GenerateCredentials return user and password
-func GenerateCredentials() (string, string, error) {
-	password := make([]byte, 128)
+func GenerateCredentials() (string, string, string, error) {
+	plainPassword := make([]byte, 128)
 	user := make([]byte, 128)
 
 	_, err := rand.Read(user)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
-	_, err = rand.Read(password)
+	_, err = rand.Read(plainPassword)
 	if err != nil {
-		return "", "", err
-	}
-	password, err = bcrypt.GenerateFromPassword(password, 14)
-	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
 	encodedUser := base64.StdEncoding.EncodeToString(user)
+	encodedPlainPassword := base64.StdEncoding.EncodeToString(plainPassword)
 
-	return encodedUser, string(password), nil
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(encodedPlainPassword), 14)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	return encodedUser, encodedPlainPassword, string(hashedPassword), nil
 }
 
 // ToRFCFormat return the time.Time object as string in RFC3339 format

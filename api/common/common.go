@@ -52,7 +52,7 @@ func HandleNotFoundError(err error, entityName string, entityID string) error {
 	return err
 }
 
-// HandleUniqueError checks if entity
+// HandleUniqueError checks if entity is not unique
 func HandleUniqueError(err error, entityName string) error {
 	if err == storage.ErrUniqueViolation {
 		return types.NewErrorResponse(
