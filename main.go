@@ -27,19 +27,20 @@ func main() {
 	handleInterrupts(ctx, cancel)
 
 	api := rest.API{}
-	api.RegisterFilters(filter.Filter{
-		RequestMatcher: filter.RequestMatcher{
-			Methods:     []string{"GET"},
-			PathPattern: "/v1/*",
-		},
-		Middleware: func(request *filter.Request, next filter.Handler) (*filter.Response, error) {
-			res, err := next(request)
-			if err == nil {
-				res.Body, err = sjson.SetBytes(res.Body, "extra", "value")
-			}
-			return res, err
-		},
-	})
+	// api.RegisterPlugins(&MyPlugin{})
+	// api.RegisterFilters(filter.Filter{
+	// 	RequestMatcher: filter.RequestMatcher{
+	// 		Methods:     []string{"GET"},
+	// 		PathPattern: "/v1/*",
+	// 	},
+	// 	Middleware: func(request *filter.Request, next filter.Handler) (*filter.Response, error) {
+	// 		res, err := next(request)
+	// 		if err == nil {
+	// 			res.Body, err = sjson.SetBytes(res.Body, "extra", "value")
+	// 		}
+	// 		return res, err
+	// 	},
+	// })
 
 	config := &sm.Parameters{
 		Context:     ctx,
@@ -52,6 +53,24 @@ func main() {
 	}
 
 	srv.Run(ctx)
+}
+
+type MyPlugin struct{}
+
+func (p *MyPlugin) FetchCatalog(req *filter.Request, next filter.Handler) (*filter.Response, error) {
+	resp, err := next(req)
+	if err == nil {
+		resp.Body, err = sjson.SetBytes(resp.Body, "extra", "my-plugin")
+	}
+	return resp, err
+}
+
+func (p *MyPlugin) Provision(req *filter.Request, next filter.Handler) (*filter.Response, error) {
+	resp, err := next(req)
+	if err == nil {
+		resp.StatusCode = 200
+	}
+	return resp, err
 }
 
 func handleInterrupts(ctx context.Context, cancelFunc context.CancelFunc) {
