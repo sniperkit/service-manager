@@ -4,10 +4,6 @@ import (
 	"context"
 	"flag"
 
-	"github.com/tidwall/sjson"
-
-	"github.com/Peripli/service-manager/pkg/filter"
-
 	"os"
 	"os/signal"
 
@@ -55,23 +51,23 @@ func main() {
 	srv.Run(ctx)
 }
 
-type MyPlugin struct{}
+// type MyPlugin struct{}
 
-func (p *MyPlugin) FetchCatalog(req *filter.Request, next filter.Handler) (*filter.Response, error) {
-	resp, err := next(req)
-	if err == nil {
-		resp.Body, err = sjson.SetBytes(resp.Body, "extra", "my-plugin")
-	}
-	return resp, err
-}
+// func (p *MyPlugin) FetchCatalog(req *filter.Request, next filter.Handler) (*filter.Response, error) {
+// 	resp, err := next(req)
+// 	if err == nil {
+// 		resp.Body, err = sjson.SetBytes(resp.Body, "extra", "my-plugin")
+// 	}
+// 	return resp, err
+// }
 
-func (p *MyPlugin) Provision(req *filter.Request, next filter.Handler) (*filter.Response, error) {
-	resp, err := next(req)
-	if err == nil {
-		resp.StatusCode = 200
-	}
-	return resp, err
-}
+// func (p *MyPlugin) Provision(req *filter.Request, next filter.Handler) (*filter.Response, error) {
+// 	resp, err := next(req)
+// 	if err == nil {
+// 		resp.StatusCode = 200
+// 	}
+// 	return resp, err
+// }
 
 func handleInterrupts(ctx context.Context, cancelFunc context.CancelFunc) {
 	term := make(chan os.Signal)
