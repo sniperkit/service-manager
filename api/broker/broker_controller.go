@@ -71,7 +71,7 @@ func (ctrl *Controller) addBroker(request *filter.Request) (*filter.Response, er
 	}
 
 	if err := validateBroker(broker); err != nil {
-		return nil, types.NewErrorResponse(err, http.StatusBadRequest, "BadRequest")
+		return nil, filter.NewErrorResponse(err, http.StatusBadRequest, "BadRequest")
 	}
 
 	uuid, err := uuid.NewV4()
@@ -154,7 +154,7 @@ func (ctrl *Controller) updateBroker(request *filter.Request) (*filter.Response,
 	if broker.Credentials != nil {
 		err := validateBrokerCredentials(broker.Credentials)
 		if err != nil {
-			return nil, types.NewErrorResponse(err, http.StatusBadRequest, "BadRequest")
+			return nil, filter.NewErrorResponse(err, http.StatusBadRequest, "BadRequest")
 		}
 	}
 	err := brokerStorage.Update(broker)
